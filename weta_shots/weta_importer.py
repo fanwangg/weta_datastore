@@ -64,14 +64,21 @@ def import_from_file(filename):
     return shots
 
 
+def import_file_and_store(filename):
+    shots = import_from_file(filename)
+    pickle_dump(shots)
+
+
 def pickle_dump(data, filename='output.pkl'):
     with open(filename, 'wb') as handle:
         pickle.dump(data, handle)
 
 
-def import_file_and_store(filename):
-    shots = import_from_file(filename)
-    pickle_dump(shots)
+def pickle_load(filename):
+    with open(filename, 'rb') as handle:
+        data = pickle.load(handle)
+
+    return data.values()
 
 
 if __name__ == '__main__':
