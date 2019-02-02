@@ -17,6 +17,34 @@ class Shot(NamedTuple):
     def uid(self):
         return (self.project, self.shot, self.version)
 
+    @property
+    def PROJECT(self):
+        return self.project
+
+    @property
+    def SHOT(self):
+        return self.shot
+
+    @property
+    def VERSION(self):
+        return self.version
+
+    @property
+    def STATUS(self):
+        return self.status
+
+    @property
+    def FINISH_DATE(self):
+        return self.finish_date
+
+    @property
+    def INTERNAL_BID(self):
+        return self.internal_bid
+
+    @property
+    def CREATED_DATE(self):
+        return self.created_date
+
 
 def import_from_file(filename):
     shots = dict()
@@ -41,12 +69,15 @@ def pickle_dump(data, filename='output.pkl'):
         pickle.dump(data, handle)
 
 
-def pickle_load(filename):
-    with open(filename, 'rb') as handle:
-        data = pickle.load(handle)
-    return data
-
-
 def import_file_and_store(filename):
     shots = import_from_file(filename)
     pickle_dump(shots)
+
+
+if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser(description='Parameter for the importer')
+    parser.add_argument('-f', '--filename', nargs='+', help='file to import')
+    args = parser.parse_args()
+
+    import_file_and_store(args.filename[0])
