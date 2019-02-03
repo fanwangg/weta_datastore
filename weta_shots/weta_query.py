@@ -36,7 +36,6 @@ class WetaQuery():
             if parsed_arg == '(':
                 ops_stack.append('(')
             elif parsed_arg == ')':
-                data_stack.append()
                 while ops_stack[-1] != '(':
                     data_stack.append(operate(ops_stack.pop(), data_stack.pop(), data_stack.pop()))
                 ops_stack.pop()
@@ -54,7 +53,7 @@ class WetaQuery():
 
     def filter_single(self, data, arg_str):
         arg_str = arg_str.replace('"', '')
-        parsed_args = re.search(r'''(\w+)='*([\w|\s|-]+)'*''', arg_str)
+        parsed_args = re.search(r'''(\w+)=([\w|\s|-]+)''', arg_str)
         data = list(filter(lambda d: getattr(d, parsed_args[1]) == parsed_args[2], data))
         return data
 
