@@ -14,6 +14,18 @@ class Shot(NamedTuple):
     internal_bid: float
     created_date: str
 
+    @classmethod
+    def from_csv_row(cls, row):
+        return cls(
+            project=row['PROJECT'],
+            shot=row['SHOT'],
+            version=int(row['VERSION']),
+            status=row['STATUS'],
+            finish_date=row['FINISH_DATE'],
+            internal_bid=float(row['INTERNAL_BID']),
+            created_date=row['CREATED_DATE']
+        )
+
     @property
     def uid(self):
         return (self.PROJECT, self.SHOT, self.VERSION)
@@ -53,6 +65,7 @@ class Aggregation(Enum):
     SUM = ('sum', lambda s: sum(s))
     COUNT = ('count', lambda s: len(s))
     COLLECT = ('collect', lambda s: s)
+    DEFAULT = (None, lambda s: s[0])
 
     def __call__(self, *args, **kwargs):
         return self.value[1](*args, **kwargs)
@@ -62,25 +75,24 @@ class Aggregation(Enum):
         for c in cls:
             if c.value[0] == s:
                 return c
-        raise ValueError(cls.__name__ + ' has no value matching "{s}"')
+
+        print(f'{cls.__name__} has no value matching "{s}", using DEFAULT')
+        return Aggregation.DEFAULT
 
 
 class ShotGroup:
-    def __init__(self, aggregrations: dict):
-        self.shots = list()
+    def __init__(self, shots: list, aggregrations: dict):
+        self.shots = shots
         self.aggregating_method = dict()
 
         for k, v in aggregrations.items():
             self.aggregating_method[k] = Aggregation.from_string(v)
 
-    def add_shots(self, shots):
-        self.shots.extend(shots)
-
     def get_properity(self, property):
         return [getattr(s, property) for s in self.shots]
 
     def get_aggregated_property(self, property):
-        aggregating_method = self.aggregating_method.get(property, Aggregation.COLLECT)
+        aggregating_method = self.aggregating_method.get(property, Aggregation.DEFAULT)
         return aggregating_method(self.get_properity(property))
 
     @property
@@ -117,14 +129,7 @@ def import_from_file(filename):
     with open(filename, newline='') as import_file:
         dict_reader = csv.DictReader(import_file, delimiter='|')
         for row in dict_reader:
-            s = Shot(project=row['PROJECT'],
-                     shot=row['SHOT'],
-                     version=row['VERSION'],
-                     status=row['STATUS'],
-                     finish_date=row['FINISH_DATE'],
-                     internal_bid=row['INTERNAL_BID'],
-                     created_date=row['CREATED_DATE'])
-
+            s = Shot.from_csv_row(row)
             shots[s.uid] = s
 
     return shots
