@@ -1,163 +1,49 @@
 import csv
 import pickle
 
-from enum import Enum
-from typing import NamedTuple
+from weta_shot import Shot
 
 
-class Shot(NamedTuple):
-    project: str
-    shot: str
-    version: int
-    status: str
-    finish_date: str
-    internal_bid: float
-    created_date: str
+class WetaImporter:
+    def import_from_file(self, filename):
+        shots = dict()
+        with open(filename, newline='') as import_file:
+            dict_reader = csv.DictReader(import_file, delimiter='|')
+            for row in dict_reader:
+                s = Shot.from_csv_row(row)
+                shots[s.uid] = s
 
-    @classmethod
-    def from_csv_row(cls, row):
-        return cls(
-            project=row['PROJECT'],
-            shot=row['SHOT'],
-            version=int(row['VERSION']),
-            status=row['STATUS'],
-            finish_date=row['FINISH_DATE'],
-            internal_bid=float(row['INTERNAL_BID']),
-            created_date=row['CREATED_DATE']
-        )
+        return shots
 
-    @property
-    def uid(self):
-        return (self.PROJECT, self.SHOT, self.VERSION)
+    def import_file_and_store(self, filename, output_filename='output.pkl'):
+        shots = self.import_from_file(filename)
+        self.pickle_dump(shots, output_filename)
 
-    @property
-    def PROJECT(self):
-        return self.project
+    def pickle_dump(self, data, filename):
+        with open(filename, 'wb') as handle:
+            pickle.dump(data, handle)
 
-    @property
-    def SHOT(self):
-        return self.shot
+    @staticmethod
+    def pickle_load(filename='output.pkl'):
+        with open(filename, 'rb') as handle:
+            data = pickle.load(handle)
 
-    @property
-    def VERSION(self):
-        return self.version
-
-    @property
-    def STATUS(self):
-        return self.status
-
-    @property
-    def FINISH_DATE(self):
-        return self.finish_date
-
-    @property
-    def INTERNAL_BID(self):
-        return self.internal_bid
-
-    @property
-    def CREATED_DATE(self):
-        return self.created_date
-
-
-class Aggregation(Enum):
-    MIN = ('min', lambda s: min(s))
-    MAX = ('max', lambda s: max(s))
-    SUM = ('sum', lambda s: sum(s))
-    COUNT = ('count', lambda s: len(s))
-    COLLECT = ('collect', lambda s: s)
-    DEFAULT = (None, lambda s: s[0])
-
-    def __call__(self, *args, **kwargs):
-        return self.value[1](*args, **kwargs)
-
-    @classmethod
-    def from_string(cls, s):
-        for c in cls:
-            if c.value[0] == s:
-                return c
-
-        print(f'{cls.__name__} has no value matching "{s}", using DEFAULT')
-        return Aggregation.DEFAULT
-
-
-class ShotGroup:
-    def __init__(self, shots: list, aggregrations: dict):
-        self.shots = shots
-        self.aggregating_method = dict()
-
-        for k, v in aggregrations.items():
-            self.aggregating_method[k] = Aggregation.from_string(v)
-
-    def get_properity(self, property):
-        return [getattr(s, property) for s in self.shots]
-
-    def get_aggregated_property(self, property):
-        aggregating_method = self.aggregating_method.get(property, Aggregation.DEFAULT)
-        return aggregating_method(self.get_properity(property))
-
-    @property
-    def PROJECT(self):
-        return self.get_aggregated_property('PROJECT')
-
-    @property
-    def SHOT(self):
-        return self.get_aggregated_property('SHOT')
-
-    @property
-    def VERSION(self):
-        return self.get_aggregated_property('VERSION')
-
-    @property
-    def STATUS(self):
-        return self.get_aggregated_property('STATUS')
-
-    @property
-    def FINISH_DATE(self):
-        return self.get_aggregated_property('FINISH_DATE')
-
-    @property
-    def INTERNAL_BID(self):
-        return self.get_aggregated_property('INTERNAL_BID')
-
-    @property
-    def CREATED_DATE(self):
-        return self.get_aggregated_property('CREATED_DATE')
-
-
-def import_from_file(filename):
-    shots = dict()
-    with open(filename, newline='') as import_file:
-        dict_reader = csv.DictReader(import_file, delimiter='|')
-        for row in dict_reader:
-            s = Shot.from_csv_row(row)
-            shots[s.uid] = s
-
-    return shots
-
-
-def import_file_and_store(filename):
-    shots = import_from_file(filename)
-    pickle_dump(shots)
-
-
-def pickle_dump(data, filename='output.pkl'):
-    with open(filename, 'wb') as handle:
-        pickle.dump(data, handle)
-
-
-def pickle_load(filename):
-    with open(filename, 'rb') as handle:
-        data = pickle.load(handle)
-
-    return list(data.values())
+        return list(data.values())
 
 
 def main():
     import argparse
     parser = argparse.ArgumentParser(description='Parameter for the importer')
-    parser.add_argument('-f', '--filename', nargs='+', help='file to import')
+    parser.add_argument('-d', '--debug', action='store_true')
+    parser.add_argument('-f', '--filename', required=True, help='path for file to import')
+    parser.add_argument('-o', '--output', help='path for output file')
     args = parser.parse_args()
-    import_file_and_store(args.filename[0])
+
+    weta_importer = WetaImporter()
+    if args.output:
+        weta_importer.import_file_and_store(args.filename, args.output)
+    else:
+        weta_importer.import_file_and_store(args.filename)
 
 
 if __name__ == '__main__':

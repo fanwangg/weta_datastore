@@ -1,7 +1,8 @@
 import re
 from collections import defaultdict
 
-from weta_importer import Shot, ShotGroup, pickle_load
+from weta_importer import WetaImporter
+from weta_shot import Shot, ShotGroup
 
 
 def filter_multiple(all_data, args):
@@ -105,7 +106,7 @@ def main():
     if args.debug:
         print(args)
 
-    data = pickle_load('../output.pkl')
+    data = WetaImporter.pickle_load('../output.pkl')
 
     if args.filter:
         data = filter_multiple(data, args.filter)
