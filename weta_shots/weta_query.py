@@ -1,3 +1,4 @@
+import re
 from weta_importer import Shot, pickle_load
 
 
@@ -29,7 +30,12 @@ if __name__ == '__main__':
     if args.debug:
         print(args)
 
-    data = pickle_load('output.pkl')
+    data = pickle_load('../output.pkl')
+
+    if args.filter:
+        filters = re.search(r"(\w+)='*([\w|\s|-]+)'*", args.filter)
+        column, creteria = filters[1], filters[2]
+        data = list(filter(lambda d: getattr(d, column) == creteria, data))
 
     if args.order:
         sorting_keys = args.order.split(',')
