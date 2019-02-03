@@ -78,13 +78,16 @@ def pickle_load(filename):
     with open(filename, 'rb') as handle:
         data = pickle.load(handle)
 
-    return data.values()
+    return list(data.values())
 
 
-if __name__ == '__main__':
+def main():
     import argparse
     parser = argparse.ArgumentParser(description='Parameter for the importer')
     parser.add_argument('-f', '--filename', nargs='+', help='file to import')
     args = parser.parse_args()
-
     import_file_and_store(args.filename[0])
+
+
+if __name__ == '__main__':
+    main()

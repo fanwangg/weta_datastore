@@ -17,7 +17,7 @@ def output(data):
         print(d)
 
 
-if __name__ == '__main__':
+def main():
     import argparse
     parser = argparse.ArgumentParser(description='Parameter for the queries')
     parser.add_argument('-d', '--debug', action='store_true')
@@ -45,3 +45,7 @@ if __name__ == '__main__':
     selected_data = select_column(data, columns=selected_column)
 
     output(selected_data)
+
+
+if __name__ == '__main__':
+    main()
