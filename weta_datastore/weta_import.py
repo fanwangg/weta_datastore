@@ -25,10 +25,13 @@ class WetaImporter:
 
     @staticmethod
     def pickle_load(filename='output.pkl'):
-        with open(filename, 'rb') as handle:
-            data = pickle.load(handle)
-
-        return list(data.values())
+        try:
+            with open(filename, 'rb') as handle:
+                data = pickle.load(handle)
+            return list(data.values())
+        except FileNotFoundError:
+            print(f'File {filename} not found, please make sure importing file to datastore')
+            return None
 
 
 def main():
@@ -36,14 +39,10 @@ def main():
     parser = argparse.ArgumentParser(description='Parameter for the importer')
     parser.add_argument('-d', '--debug', action='store_true')
     parser.add_argument('-f', '--filename', required=True, help='path for file to import')
-    parser.add_argument('-o', '--output', help='path for output file')
     args = parser.parse_args()
 
     weta_importer = WetaImporter()
-    if args.output:
-        weta_importer.import_file_and_store(args.filename, args.output)
-    else:
-        weta_importer.import_file_and_store(args.filename)
+    weta_importer.import_file_and_store(args.filename)
 
 
 if __name__ == '__main__':

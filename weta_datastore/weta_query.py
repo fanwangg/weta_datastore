@@ -1,7 +1,7 @@
 import re
 from collections import defaultdict
 
-from weta_importer import WetaImporter
+from weta_import import WetaImporter
 from weta_shot import Shot, ShotGroup
 
 
@@ -12,6 +12,9 @@ class WetaQuery():
         self.selection_method = None
 
     def filter_multiple(self, args):
+        if not self.data:
+            return
+
         def operate(op, second, first):
             if op == 'AND':
                 return first & second
@@ -58,6 +61,8 @@ class WetaQuery():
         return data
 
     def aggregate(self, aggregate_keys):
+        if not self.data:
+            return
         groups = defaultdict(list)
         for d in self.data:
             group_index = tuple(getattr(d, k) for k in aggregate_keys)
@@ -71,14 +76,20 @@ class WetaQuery():
         self.data = aggregated_data
 
     def select(self):
+        if not self.data:
+            return
         columns = self.selection_method.keys()
         rows = [[str(getattr(d, col)) for col in columns] for d in self.data]
         self.selected_data = [','.join(row) for row in rows]
 
     def sort(self, sorting_keys):
+        if not self.data:
+            return
         self.data.sort(key=lambda s: tuple(getattr(s, k) for k in sorting_keys))
 
     def output(self):
+        if not self.data or not self.selected_data:
+            return
         for d in self.selected_data:
             print(d)
 
@@ -105,7 +116,7 @@ def main():
     if args.debug:
         print(args)
 
-    data = WetaImporter.pickle_load('../output.pkl')
+    data = WetaImporter.pickle_load()
     querier = WetaQuery(data)
 
     if args.filter:
