@@ -4,17 +4,52 @@ from collections import defaultdict
 from weta_importer import Shot, ShotGroup, pickle_load
 
 
-def preprocess_filter(filtering):
-    parsed_results = re.search(r"(\w+)='*([\w|\s|-]+)'*", filtering)
-    filter_results = {parsed_results[1]: parsed_results[2]}
+def filter_multiple(all_data, args):
+    def operate(op, second, first):
+        if op == 'AND':
+            return first & second
+        elif op == 'OR':
+            return first | second
+        else:
+            print(f'Wrong op {op}')
 
-    return filter_results
+    def precedence(current_op, op_from_ops):
+        if op_from_ops == '(' or op_from_ops == ')':
+            return False
+        elif (current_op == 'OR') and (op_from_ops == 'AND'):
+            return False
+        else:
+            return True
+
+    parsed_args = re.split(r'''(\w+\s*=\"[\w\s]+\")|(\w+\s*=[\w]+)|(AND|and)|(OR|or)|([()]+)''', args)
+    parsed_args = [pa for pa in parsed_args if pa and pa != ' ']
+    data_stack, ops_stack = [], []
+
+    for parsed_arg in parsed_args:
+        if parsed_arg == '(':
+            ops_stack.append('(')
+        elif parsed_arg == ')':
+            data_stack.append()
+            while ops_stack[-1] != '(':
+                data_stack.append(operate(ops_stack.pop(), data_stack.pop(), data_stack.pop()))
+            ops_stack.pop()
+        elif parsed_arg in ['AND', 'OR']:
+            while len(ops_stack) != 0 and precedence(parsed_arg, ops_stack[-1]):
+                data_stack.append(operate(ops_stack.pop(), data_stack.pop(), data_stack.pop()))
+            ops_stack.append(parsed_arg)
+        else:
+            data_stack.append(set(filter_single(all_data, parsed_arg)))
+
+    while len(ops_stack) > 0:
+        data_stack.append(operate(ops_stack.pop(), data_stack.pop(), data_stack.pop()))
+
+    return list(data_stack.pop())
 
 
-def filter_data(data, filter_keys):
-    for k, v in filter_keys.items():
-        data = list(filter(lambda d: getattr(d, k) == v, data))
-
+def filter_single(data, arg_str):
+    arg_str = arg_str.replace('"', '')
+    parsed_args = re.search(r'''(\w+)='*([\w|\s|-]+)'*''', arg_str)
+    data = list(filter(lambda d: getattr(d, parsed_args[1]) == parsed_args[2], data))
     return data
 
 
@@ -73,8 +108,7 @@ def main():
     data = pickle_load('../output.pkl')
 
     if args.filter:
-        filter_keys = preprocess_filter(args.filter)
-        data = filter_data(data, filter_keys)
+        data = filter_multiple(data, args.filter)
 
     if args.order:
         sorting_keys = args.order.split(',')
